@@ -31,6 +31,7 @@ This repo contains a mix of SQL queries that were found [on this repo](https://g
 - [Direct Messages between two users](#direct-messages-between-two-users)
 - [Get all messages for a user](#get-all-messages-for-a-user)
 - [Disk space usage from all databases](#disk-space-usage-from-all-databases)
+- [Swap the Id value of two users](#swap-the-id-value-of-two-users)
 
 # System Console Metrics
 
@@ -670,4 +671,29 @@ GROUP BY
     table_schema
 ORDER BY
     size_mb DESC;
+```
+
+## Swap the Id value of two users
+
+This query will swap the `Users.Id` value of two users in the `Users` table. Most commonly, this query is for when SAML is used for authentication, and the `SamlSettings.IdAttribute` is set to a value that can potentially change, such as `email` or `username`. A user logging in after a change to their email or username will create a new user in the database, and this query can be used to swap the IDs of the old and new users. This will restore their channels, posts, and other data to the state it was prior to the change. Once everything is verified, the old user account can be safely deleted with `mmctl` to remove it from the database.
+
+```sql
+DO $$
+DECLARE
+    id_old TEXT;
+    id_new TEXT;
+BEGIN
+    -- Step 1: Get original IDs
+    SELECT id INTO id_old FROM users WHERE email = '<oldUserEmail>';
+    SELECT id INTO id_new FROM users WHERE email = '<newUserEmail>';
+
+    -- Step 2: Update <oldUserEmail> to a temp ID
+    UPDATE users SET id = 'temp-swap-id' WHERE id = id_old;
+
+    -- Step 3: Update <newUserEmail> to <oldUserEmail>'s original ID
+    UPDATE users SET id = id_old WHERE id = id_new;
+
+    -- Step 4: Update <oldUserEmail> to <newUserEmail>'s original ID
+    UPDATE users SET id = id_new WHERE id = 'temp-swap-id';
+END $$;
 ```
