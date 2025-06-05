@@ -677,6 +677,8 @@ ORDER BY
 
 This query will swap the `Users.Id` value of two users in the `Users` table. Most commonly, this query is for when SAML is used for authentication, and the `SamlSettings.IdAttribute` is set to a value that can potentially change, such as `email` or `username`. A user logging in after a change to their email or username will create a new user in the database, and this query can be used to swap the IDs of the old and new users. This will restore their channels, posts, and other data to the state it was prior to the change. Once everything is verified, the old user account can be safely deleted with `mmctl` to remove it from the database.
 
+Note: It is recommended that you revoke the sessions of both the original account and new account prior to making this change. This can be done by going to System Console -> User Management -> Users, searching for the users, and then under the actions for each user select "remove sessions". 
+
 ```sql
 DO $$
 DECLARE
